@@ -12,6 +12,10 @@ namespace DataGenerator
         [Serializable]
         public class LucemiaData
         {
+            public LucemiaData()
+            {
+            }
+
             public LucemiaData(int Col1, int Col2, int Col3, int Col4, int Col5, int Col6, int Col7, int Col8, int Col9,
                 int Col10, int Col11, int Col12, int Col13, int Col14, int Col15, int Col16, int Col17, int Col18,
                 int Col19, int Class)
@@ -85,18 +89,18 @@ namespace DataGenerator
                 Map(m => m.Col18).Name("Col18");
                 Map(m => m.Col19).Name("Col19");
                 Map(m => m.Col20).Name("Col20");
-            }                 
+            }
         }
 
 
         public class ColumnProportion
         {
             public int Value { get; set; }
-            public decimal Proportion { get; set; }
+            public double Proportion { get; set; }
         }
         static void Main(string[] args)
         {
-            const string dataPath = "C:\\Users\\jskurzynska\\Downloads\\bialaczkaData1.csv";
+            const string dataPath = "C:\\Users\\Joanna\\repos\\oversamplingData\\bialaczkaData1.csv";
             var expectedRowsNumber = 1000;
 
             using (TextReader textReader = File.OpenText(dataPath))
@@ -136,12 +140,37 @@ namespace DataGenerator
                 foreach (var column in listOfColumns)
                 {
                     var numberOfDifferentValues = column.GroupBy(x => x);
-                    var columnProportion = numberOfDifferentValues.Select(x => new ColumnProportion { Value = x.Key, Proportion = (decimal)x.Count() / (decimal)rowsNumber});
+                    var columnProportion = numberOfDifferentValues.Select(x => new ColumnProportion { Value = x.Key, Proportion = (double)x.Count() / (double)rowsNumber });
                     listOfProportion.Add(columnProportion);
                 }
                 var numberOfClasses = classes.GroupBy(x => x);
-                var classProportion = numberOfClasses.Select(x => (decimal)x.Count()/(decimal) rowsNumber);
+                var classProportionn = numberOfClasses.Select(x => (double)x.Count() / (double)rowsNumber);
+                //Najpierw generujemy nr klasy, do której należy generowany obiekt: dzielimy przedział [0, 1] na odcinki o długości pi, 
+                var classProportions = listOfProportion.Last();
+                var listOfSegments = new List<(double start, double end)>();
+                var start = 0D;
+                //TODO wyciagnac te segmenty
+                foreach (var classProportion in classProportions)
+                {
+                    var segment = (start: start, end: start + classProportion.Proportion);
+                    listOfSegments.Add(segment);
+                    start += classProportion.Proportion;
+                }
 
+                //generujemy liczbę losową o rozkładzie równomiernym na odcinku [0, 1]. 
+                var random = new Random();
+                var randomNumber = random.NextDouble();
+                var newClass = 1;
+                for (var i = 0; i < listOfSegments.Count; ++i)
+                {
+                    //Jeśli liczba ta wpadła do i-tego odcinka (o długości pi), to numer klasy jest równy i
+                    if (randomNumber >= listOfSegments[i].start && randomNumber < listOfSegments[i].end)
+                    {
+                        newClass = i+1;
+                        break;
+                    }
+                }
+                var newRow = new LucemiaData { Class = newClass };
 
             }
 
